@@ -19,6 +19,17 @@ object RemoveVipSectionPatch {
     @JvmStatic
     private fun processingLayout(view: View?) {
         view ?: return
+        // 9.8.0 的“我的”页布局已变更（mine_vip_layout 不复存在），
+        // 找不到视图时降级为不处理，不要让整个标签页崩掉
+        try {
+            processingLayoutInternal(view)
+        } catch (t: Throwable) {
+            Logger.error(t) { "RemoveVipSectionPatch, processing layout error" }
+        }
+    }
+
+    @JvmStatic
+    private fun processingLayoutInternal(view: View) {
         val vipLayout = view.findView<ViewGroup>("mine_vip_layout")
         val mineRecycle = view.findView<ViewGroup>("mine_recycle")
         mineRecycle.clipToPadding = false

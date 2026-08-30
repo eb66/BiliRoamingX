@@ -9,6 +9,8 @@ import app.revanced.patcher.util.proxy.mutableTypes.MutableMethodParameter.Compa
 import app.revanced.patches.bilibili.misc.settings.fingerprints.PreferenceManagerFingerprint
 import app.revanced.patches.bilibili.utils.MethodParameter
 import app.revanced.patches.bilibili.utils.cloneMutable
+import app.revanced.patches.bilibili.utils.proxy
+import app.revanced.patches.bilibili.utils.removeFinal
 import app.revanced.util.exception
 
 /**
@@ -58,6 +60,12 @@ object FixPreferenceManagerPatch : BytecodePatch(setOf(PreferenceManagerFingerpr
         val getSharedPreferencesMethod = preferenceManagerDef.methods.first {
             it.parameters.isEmpty() && it.returnType == "Landroid/content/SharedPreferences;"
         }
+        // 9.8.0 的 R8 给该方法加上了 final，子类覆盖会在实例化时抛 LinkageError
+        preferenceManagerDef.proxy(context).methods.first {
+            it.name == getSharedPreferencesMethod.name && it.parameters.isEmpty()
+                    && it.returnType == "Landroid/content/SharedPreferences;"
+        }.run { accessFlags = accessFlags.removeFinal() }
+
         val modulePrefsManagerClass =
             context.findClass("Lapp/revanced/bilibili/settings/ModulePreferenceManager;")!!.mutableClass
         modulePrefsManagerClass.setSuperClass(preferenceManagerDef.type)
