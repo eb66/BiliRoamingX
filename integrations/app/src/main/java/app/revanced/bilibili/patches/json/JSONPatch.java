@@ -86,6 +86,8 @@ public class JSONPatch {
             hasClass("tv.danmaku.bili.ui.splash.ad.model.SplashData");
     private static final boolean HAS_SPLASH_SHOW_DATA =
             hasClass("tv.danmaku.bili.ui.splash.ad.model.SplashShowData");
+    private static final boolean HAS_DM_ADVERT =
+            hasClass("com.bilibili.ad.adview.videodetail.danmakuv2.model.DmAdvert");
 
     @Keep
     public static Object parseObjectHook(Object obj) {
@@ -119,7 +121,7 @@ public class JSONPatch {
                 // no problem, see com.bilibili.okretro.BiliApiDataCallback
                 return null;
             }
-        } else if (data instanceof DmAdvert dmAdvert) {
+        } else if (HAS_DM_ADVERT && data instanceof DmAdvert dmAdvert) {
             if (Settings.BlockUpRcmdAds.get()) {
                 List<Dm> ads = dmAdvert.getAds();
                 if (ads != null)
