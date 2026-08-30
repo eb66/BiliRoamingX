@@ -186,7 +186,10 @@ public abstract class ApplicationDelegate extends Application {
             PackageInfo packageInfo = originalCreator.createFromParcel(source);
             if (!originalSignatures.containsKey(packageInfo.packageName) && packageInfo.signatures != null && packageInfo.signatures.length > 0) {
                 Signature signature = packageInfo.signatures[0];
-                IntegrityVerifier.verifySignature(signature);
+                // 该 CREATOR 会拦截所有包的 PackageInfo（例如 WebView 提供者包），
+                // 完整性校验只应针对宿主自身，否则会误杀。
+                if ("tv.danmaku.bili".equals(packageInfo.packageName))
+                    IntegrityVerifier.verifySignature(signature);
                 String signatureBase64 = Base64.encodeToString(signature.toByteArray(), Base64.NO_WRAP);
                 originalSignatures.put(packageInfo.packageName, signatureBase64);
             }
