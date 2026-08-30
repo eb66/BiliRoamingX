@@ -1,0 +1,33 @@
+name: Integrations Only
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build integrations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - name: Retrieve version
+        run: |
+          version=`awk -F "=" '$1 == "version" {print $2}' gradle.properties`
+          commit_count=`git rev-list HEAD --count`
+          echo "VERSION=${version}.r${commit_count}" >> $GITHUB_ENV
+      - name: Build integrations apk
+        run: ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx2g -Pversion=$VERSION :integrations:app:assembleRelease
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrations-${{ env.VERSION }}
+          path: integrations/app/build/outputs/apk/release/*.apk
