@@ -66,6 +66,7 @@ import app.revanced.bilibili.utils.Toasts;
 import app.revanced.bilibili.utils.Utils;
 import app.revanced.bilibili.utils.Versions;
 import kotlin.Unit;
+import app.revanced.bilibili.utils.Logger;
 
 public class PegasusPatch {
 
@@ -783,6 +784,15 @@ public class PegasusPatch {
     // Only called when ab test `ff_key_use_new_pegasus` not hit
     @Keep
     public static void pegasusHook(GeneralResponse<PegasusFeedResponse> response) {
+        // Config 的若干字段在 9.8.0 已被移除，触发 NoSuchFieldError 会崩在首页信息流上
+        try {
+            pegasusHookInternal(response);
+        } catch (Throwable t) {
+            Logger.error(t, () -> "PegasusPatch, pegasus hook error");
+        }
+    }
+
+    private static void pegasusHookInternal(GeneralResponse<PegasusFeedResponse> response) {
         var data = response.data;
         if (data == null) return;
         customPegasusConfig(data.config);

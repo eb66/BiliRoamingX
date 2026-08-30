@@ -71,19 +71,36 @@ public class JSONPatch {
         return name;
     });
 
+    private static boolean hasClass(String name) {
+        try {
+            Class.forName(name, false, JSONPatch.class.getClassLoader());
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    // 9.8.0 已移除这两个开屏广告模型；不加保护会在 if 链第一个分支就抛
+    // NoClassDefFoundError，导致后面所有 JSON 钩子变成死代码。
+    private static final boolean HAS_SPLASH_DATA =
+            hasClass("tv.danmaku.bili.ui.splash.ad.model.SplashData");
+    private static final boolean HAS_SPLASH_SHOW_DATA =
+            hasClass("tv.danmaku.bili.ui.splash.ad.model.SplashShowData");
+
     @Keep
     public static Object parseObjectHook(Object obj) {
         try {
             return parseObjectHookInternal(obj);
         } catch (Throwable t) {
+            // 宿主版本与补丁不匹配时（缺类/缺字段）降级为不处理，不要把宿主进程带崩
             Logger.error(t, () -> "JSONPatch, parse object hook error");
-            throw t;
+            return obj;
         }
     }
 
     private static Object parseObjectHookInternal(Object obj) {
         Object data = (obj instanceof GeneralResponse<?> resp) ? resp.data : obj;
-        if (data instanceof SplashData splashData) {
+        if (HAS_SPLASH_DATA && data instanceof SplashData splashData) {
             if (Settings.PurifySplash.get()) try {
                 splashData.splashList.clear();
                 splashData.strategyList.clear();
@@ -91,7 +108,7 @@ public class JSONPatch {
                 splashData.getSplashList().clear();
                 splashData.getStrategyList().clear();
             }
-        } else if (data instanceof SplashShowData showData) {
+        } else if (HAS_SPLASH_SHOW_DATA && data instanceof SplashShowData showData) {
             if (Settings.PurifySplash.get()) try {
                 showData.strategyList.clear();
             } catch (Throwable ignored) {
