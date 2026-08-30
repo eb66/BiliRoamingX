@@ -12,7 +12,7 @@ import java.security.MessageDigest;
 
 @Keep
 public final class IntegrityVerifier {
-    public static final String EXPECTED_SIGNATURE_SHA256 = "FFDDEA21507BE262D0A7C802D8947E34466B076A06634846CC5EE4BC09ED01F1";
+    public static final String EXPECTED_SIGNATURE_SHA256 = "829321958E656DDB5E81734219F06371B989E0E3FAAACFBE84C3B830CCE8ABF9";
     private static volatile boolean verified = false;
 
     private IntegrityVerifier() {}

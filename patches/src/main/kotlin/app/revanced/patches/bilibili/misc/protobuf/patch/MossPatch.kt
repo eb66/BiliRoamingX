@@ -44,9 +44,15 @@ object MossPatch : BytecodePatch(setOf(MossServiceFingerprint, MossMiddlewareGai
                     nop
                 """.trimIndent()
                 )
-                val invokeInst = implementation.instructions.findLast {
-                    it.opcode == Opcode.INVOKE_INTERFACE
-                } as Instruction35c
+                // 9.8.0 起 MossServiceImp 迁移到 KMP 实现，尾部委派调用由
+                // invoke-interface 变为 invoke-virtual (KMossServiceImp)，两者都要接受。
+                val invokeInst = (implementation.instructions.findLast {
+                    it.opcode == Opcode.INVOKE_INTERFACE || it.opcode == Opcode.INVOKE_VIRTUAL
+                } as? Instruction35c)
+                    ?: throw PatchException("no delegating invoke found in blockingUnaryCall")
+                val invokeOpcode = invokeInst.opcode
+                val invokeMnemonic = if (invokeOpcode == Opcode.INVOKE_INTERFACE)
+                    "invoke-interface" else "invoke-virtual"
                 removeInstructions(implementation.instructions.size - 3, 3)
                 addInstructionsWithLabels(
                     implementation.instructions.size,
@@ -54,7 +60,7 @@ object MossPatch : BytecodePatch(setOf(MossServiceFingerprint, MossMiddlewareGai
                     const/4 v1, 0x0
                     const/4 v2, 0x0
                     #:try_start
-                    invoke-interface {v0, p1, p2, p3}, ${invokeInst.reference}
+                    $invokeMnemonic {v0, p1, p2, p3}, ${invokeInst.reference}
                     move-result-object p1
                     #:try_end
                     #.catch Lcom/bilibili/lib/moss/api/MossException; {:try_start .. :try_end} :catch
@@ -73,7 +79,7 @@ object MossPatch : BytecodePatch(setOf(MossServiceFingerprint, MossMiddlewareGai
                 """.trimIndent()
                 )
                 val invokeIndex = implementation.instructions.indexOfLast {
-                    it.opcode == Opcode.INVOKE_INTERFACE
+                    it.opcode == invokeOpcode
                 }
                 val moveExceptionIndex = implementation.instructions.indexOfLast {
                     it.opcode == Opcode.MOVE_EXCEPTION
@@ -129,6 +135,6 @@ object MossPatch : BytecodePatch(setOf(MossServiceFingerprint, MossMiddlewareGai
                 iput-object v0, p0, $urlField
             """.trimIndent()
             )
-        } ?: throw PatchException("not found BidirectionalStreamBuilderImpl class")
+        }  // 9.8.0 起基础包不再内置 Cronet，该类不存在时直接跳过
     }
 }

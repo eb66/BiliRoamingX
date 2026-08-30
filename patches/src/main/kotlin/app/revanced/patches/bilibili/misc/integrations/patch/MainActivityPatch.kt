@@ -37,7 +37,7 @@ object MainActivityPatch : BytecodePatch() {
             }
             methods.find { it.name == "onBackPressed" }?.addInstructionsWithLabels(
                 0, """
-                    invoke-static {p0}, Lapp/revanced/bilibili/patches/main/MainActivityDelegate;->onBackPressed(Ltv/danmaku/bili/MainActivityV2;)Z
+                    invoke-static/range {p0 .. p0}, Lapp/revanced/bilibili/patches/main/MainActivityDelegate;->onBackPressed(Ltv/danmaku/bili/MainActivityV2;)Z
                     move-result v0
                     if-eqz v0, :jump
                     return-void
